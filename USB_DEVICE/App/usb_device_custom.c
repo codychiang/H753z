@@ -80,10 +80,17 @@ void MX_USB_DEVICE_Init(void)
   {
     Error_Handler();
   }
+  
   if (USBD_RegisterClass(&hUsbDeviceFS, &USBD_CustomClass) != USBD_OK)
   {
     Error_Handler();
   }
+
+  if (USBD_CUSTOM_RegisterInterface(&hUsbDeviceFS, &USBD_Custom_fops_FS) != USBD_OK)
+  {
+    Error_Handler();
+  }
+  
   if (USBD_Start(&hUsbDeviceFS) != USBD_OK)
   {
     Error_Handler();

@@ -3,7 +3,7 @@
 
 #include "usbd_custom.h"
 
-uint8_t USBD_CUSTOM_SendData(uint8_t* buf, uint16_t len);
-void USBD_CUSTOM_DataReceived(uint8_t* buf, uint16_t len);
+// Extern declaration of the interface callbacks
+extern USBD_CUSTOM_InterfaceTypeDef USBD_Custom_fops_FS;
 
 #endif /* __USBD_CUSTOM_IF_H__ */

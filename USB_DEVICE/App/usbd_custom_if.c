@@ -1,30 +1,51 @@
 #include "usbd_custom_if.h"
 #include "usbd_def.h"
 #include "usbd_core.h"
+#include "usbd_custom.h"
 
 extern USBD_HandleTypeDef hUsbDeviceFS;
 
-static uint8_t tx_busy = 0;
+static uint8_t UserRxBuffer[512];
 
-uint8_t USBD_CUSTOM_SendData(uint8_t* buf, uint16_t len)
+static uint8_t Custom_Init(void);
+static uint8_t Custom_DeInit(void);
+static uint8_t Custom_Receive(uint8_t* buf, uint32_t *len);
+static uint8_t Custom_TxCplt(uint8_t epnum);
+
+// Struct with callback function pointers
+USBD_CUSTOM_InterfaceTypeDef USBD_Custom_fops_FS =
 {
-    if (tx_busy) return USBD_BUSY;
-    tx_busy = 1;
-    USBD_LL_Transmit(&hUsbDeviceFS, 0x81, buf, len);
+    .Init = Custom_Init,
+    .DeInit = Custom_DeInit,
+    .Receive = Custom_Receive,
+    .TransmitCplt = Custom_TxCplt
+};
+
+static uint8_t Custom_Init(void)
+{
+    // Initialization code, if any
     return USBD_OK;
 }
 
-// This function should be called from DataOut callback
-void USBD_CUSTOM_DataReceived(uint8_t* buf, uint16_t len)
+static uint8_t Custom_DeInit(void)
 {
-    // Process received data here
-    // Example: echo back
-    USBD_CUSTOM_SendData(buf, len);
-}
-
-// You can reset tx_busy in DataIn callback
-uint8_t USBD_Custom_DataIn(USBD_HandleTypeDef *pdev, uint8_t epnum)
-{
-    tx_busy = 0;
+    // Deinitialization code, if any
     return USBD_OK;
 }
+
+static uint8_t Custom_Receive(uint8_t* buf, uint32_t *len)
+{
+    // Example: echo back received data
+    memcpy(UserRxBuffer, buf, *len);
+    USBD_CUSTOM_SendData(UserRxBuffer, *len);
+    return USBD_OK;
+}
+
+static uint8_t Custom_TxCplt(uint8_t epnum)
+{
+    // Transmission complete callback
+    return USBD_OK;
+}
+
+
+

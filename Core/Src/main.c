@@ -23,6 +23,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "stdio.h"
+#include "usbd_custom.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -137,6 +138,12 @@ int main(void)
   {
 	  HAL_Delay(1000);
 	  printf("test\n");
+
+//	  if (hUsbDeviceFS.dev_state == USBD_STATE_CONFIGURED)
+//	  {
+//	      int res = USBD_CUSTOM_SendData((uint8_t*)"HELLO", 5);
+//	      printf("TX result: %d\r\n", res);
+//	  }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
