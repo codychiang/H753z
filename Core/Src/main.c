@@ -61,7 +61,34 @@ static void MX_USART3_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+#if defined(__GNUC__)
+// ➤ GCC / STM32CubeIDE
+int _write(int file, char *ptr, int len) {
+    HAL_UART_Transmit(&huart3, (uint8_t*)ptr, len, HAL_MAX_DELAY);
+    return len;
+}
 
+#elif defined(__CC_ARM)
+// ➤ Keil MDK (armcc)
+int fputc(int ch, FILE *f) {
+    HAL_UART_Transmit(&huart3, (uint8_t*)&ch, 1, HAL_MAX_DELAY);
+    return ch;
+}
+
+#elif defined(__ICCARM__)
+// ➤ IAR Compiler
+int __io_putchar(int ch) {
+    HAL_UART_Transmit(&huart3, (uint8_t*)&ch, 1, HAL_MAX_DELAY);
+    return ch;
+}
+
+int fputc(int ch, FILE *f) {
+    return __io_putchar(ch);  // IAR 也可能走 fputc
+}
+
+#else
+#warning "Unknown compiler. printf redirection not defined."
+#endif
 /* USER CODE END 0 */
 
 /**
