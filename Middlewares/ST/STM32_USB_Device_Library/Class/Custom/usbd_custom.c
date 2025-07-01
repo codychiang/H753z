@@ -7,15 +7,19 @@ extern USBD_HandleTypeDef hUsbDeviceFS;
 #define CUSTOM_IN_EP           0x81  // EP1 IN  (IN = device → host)
 #define CUSTOM_OUT_EP          0x01  // EP1 OUT (OUT = host → device)
 
-#define CUSTOM_DATA_IN_PACKET_SIZE    512
-#define CUSTOM_DATA_OUT_PACKET_SIZE   512
+#define EP_DATA_SIZE  64
+
+#define CUSTOM_DATA_IN_PACKET_SIZE    64
+#define CUSTOM_DATA_OUT_PACKET_SIZE   64
 
 typedef struct {
-  uint8_t RxBuffer[512];    // 收到資料的暫存區
-  uint8_t TxBuffer[512];    // 要傳送的資料（可選）
+  uint8_t RxBuffer[CUSTOM_DATA_IN_PACKET_SIZE];    // 收到資料的暫存區
+  uint8_t TxBuffer[CUSTOM_DATA_OUT_PACKET_SIZE];    // 要傳送的資料（可選）
   uint32_t RxLength;        // 實際收到的資料長度
   uint32_t TxLength;        // 實際要傳送的資料長度
 } USBD_CUSTOM_HandleTypeDef;
+
+__attribute__((aligned(4))) USBD_CUSTOM_HandleTypeDef ghcustom;
 
 static USBD_CUSTOM_InterfaceTypeDef *pIf = NULL;
 static uint8_t tx_busy = 0;
@@ -71,18 +75,18 @@ __ALIGN_BEGIN uint8_t USBD_Custom_CfgDesc[] __ALIGN_END =
 
   // ===== Endpoint Descriptor (OUT, EP 1) =====
   0x07,                         // bLength: Endpoint Descriptor size (7 bytes)
-  USB_DESC_TYPE_ENDPOINT,      // bDescriptorType: Endpoint
-  0x01,                         // bEndpointAddress: OUT endpoint 1 (0x01)
+  USB_DESC_TYPE_ENDPOINT,       // bDescriptorType: Endpoint
+  CUSTOM_OUT_EP,                // bEndpointAddress: OUT endpoint 1 (0x01)
   0x02,                         // bmAttributes: Bulk transfer
-  0x00, 0x02,                   // wMaxPacketSize: 512 bytes (0x0200)
+  0x40, 0x00,                   // wMaxPacketSize: **64 bytes**
   0x00,                         // bInterval: N/A for Bulk
 
   // ===== Endpoint Descriptor (IN, EP 1) =====
   0x07,                         // bLength: Endpoint Descriptor size (7 bytes)
-  USB_DESC_TYPE_ENDPOINT,      // bDescriptorType: Endpoint
-  0x81,                         // bEndpointAddress: IN endpoint 1 (0x81 = EP1 | IN)
+  USB_DESC_TYPE_ENDPOINT,       // bDescriptorType: Endpoint
+  CUSTOM_IN_EP,                 // bEndpointAddress: IN endpoint 1 (0x81 = EP1 | IN)
   0x02,                         // bmAttributes: Bulk transfer
-  0x00, 0x02,                   // wMaxPacketSize: 512 bytes (0x0200)
+  0x40, 0x00,                   // wMaxPacketSize: **64 bytes**
   0x00                          // bInterval: N/A for Bulk
 };
 
@@ -93,19 +97,19 @@ uint8_t* USBD_Custom_GetCfgDesc(uint16_t *length) {
 
 static uint8_t USBD_Custom_Init(USBD_HandleTypeDef *pdev, uint8_t cfgidx) {
 
-    USBD_CUSTOM_HandleTypeDef *hcustom;
+    USBD_CUSTOM_HandleTypeDef *hcustom = &ghcustom;
 
-    hcustom = USBD_malloc(sizeof(USBD_CUSTOM_HandleTypeDef));
-    if (hcustom == NULL)
-      return USBD_FAIL;
+//    hcustom = USBD_malloc(sizeof(USBD_CUSTOM_HandleTypeDef));
+//    if (hcustom == NULL)
+//      return USBD_FAIL;
   
     memset(hcustom, 0, sizeof(USBD_CUSTOM_HandleTypeDef));
     pdev->pClassData = hcustom;
   
-    USBD_LL_OpenEP(pdev, CUSTOM_IN_EP, USBD_EP_TYPE_BULK, 512);
-    USBD_LL_OpenEP(pdev, CUSTOM_OUT_EP, USBD_EP_TYPE_BULK, 512);
+    USBD_LL_OpenEP(pdev, CUSTOM_IN_EP, USBD_EP_TYPE_BULK, EP_DATA_SIZE);
+    USBD_LL_OpenEP(pdev, CUSTOM_OUT_EP, USBD_EP_TYPE_BULK, CUSTOM_DATA_IN_PACKET_SIZE);
 
-    USBD_LL_PrepareReceive(pdev, CUSTOM_OUT_EP, hcustom->RxBuffer, 512);
+    USBD_LL_PrepareReceive(pdev, CUSTOM_OUT_EP, hcustom->RxBuffer, CUSTOM_DATA_IN_PACKET_SIZE);
     return USBD_OK;
 }
 
@@ -165,7 +169,7 @@ static uint8_t USBD_Custom_DataOut(USBD_HandleTypeDef *pdev, uint8_t epnum) {
     USBD_CUSTOM_DataReceived(pdev);
 
     // ✅ 準備下一筆資料接收（必須）
-    USBD_LL_PrepareReceive(pdev, CUSTOM_OUT_EP, hcustom->RxBuffer, CUSTOM_DATA_OUT_PACKET_SIZE);
+    USBD_LL_PrepareReceive(pdev, CUSTOM_OUT_EP, hcustom->RxBuffer, CUSTOM_DATA_IN_PACKET_SIZE);
 
     return USBD_OK;
 }
